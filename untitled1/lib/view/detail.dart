@@ -1,0 +1,243 @@
+
+import 'package:flutter/material.dart';
+import '/viewmodel/fetchgame.dart';
+import '/model/detailgame.dart';
+import 'package:readmore/readmore.dart';
+
+class Detail extends StatelessWidget {
+  final int gameTerpilih;
+
+  const Detail({
+    super.key,
+    required this.gameTerpilih,
+  });
+
+  Future<DetailGame> fetchData() async {
+    final jsonData = await fetchDataFromAPI(gameTerpilih);
+    return DetailGame.fromJson(jsonData);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.amberAccent.shade400,
+      body: SafeArea(
+        child: FutureBuilder<DetailGame>(
+          future: fetchData(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState ==
+                ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            } else if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  'Terjadi kesalahan: ${snapshot.error}',
+                ),
+              );
+            } else if (!snapshot.hasData) {
+              return const Center(
+                child: Text('Data tidak tersedia'),
+              );
+            }
+
+            final game = snapshot.data!;
+
+            return Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(25),
+                          bottomRight: Radius.circular(25),
+                        ),
+                        child: Image.network(
+                          game.thumbnail,
+                          fit: BoxFit.cover,
+                          height: 300,
+                          width: double.infinity,
+                        ),
+                      ),
+                      Positioned(
+                        top: 25,
+                        left: 10,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.pop(context);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.8),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.arrow_back_ios_outlined,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 10,
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              game.title,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+
+                            const Text(
+                              'Minimum System Requirements',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            _requirementRow(
+                              'OS',
+                              game.minimum_system_requirements.os,
+                            ),
+                            _requirementRow(
+                              'Processor',
+                              game.minimum_system_requirements.processor,
+                            ),
+                            _requirementRow(
+                              'Memory',
+                              game.minimum_system_requirements.memory,
+                            ),
+                            _requirementRow(
+                              'Graphics',
+                              game.minimum_system_requirements.graphics,
+                            ),
+                            _requirementRow(
+                              'Storage',
+                              game.minimum_system_requirements.storage,
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            if (game.screenshots.isNotEmpty)
+                              SizedBox(
+                                height: 200,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: game.screenshots.length,
+                                  separatorBuilder: (context, index) =>
+                                  const SizedBox(width: 15),
+                                  itemBuilder: (context, index) {
+                                    return _itemList(
+                                      game.screenshots[index].image,
+                                    );
+                                  },
+                                ),
+                              ),
+
+                            const SizedBox(height: 10),
+
+                            const Text(
+                              'Deskripsi',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+
+                            ReadMoreText(
+                              game.description,
+                              trimLines: 2,
+                              colorClickableText:
+                              Colors.amberAccent.shade400,
+                              trimMode: TrimMode.Line,
+                              style: TextStyle(
+                                color: Colors.black54.withOpacity(0.8),
+                                height: 1.5,
+                              ),
+                              trimCollapsedText: 'more',
+                              trimExpandedText: 'less',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+SizedBox _itemList(String url) {
+  return SizedBox(
+    width: 250,
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(15),
+      child: Image.network(
+        url,
+        fit: BoxFit.cover,
+      ),
+    ),
+  );
+}
+
+Row _requirementRow(String title, String value) {
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Expanded(
+        flex: 3,
+        child: Text(
+          title,
+          style: const TextStyle(color: Colors.black54),
+        ),
+      ),
+      const Expanded(
+        flex: 1,
+        child: Text(
+          ':',
+          style: TextStyle(color: Colors.black54),
+        ),
+      ),
+      Expanded(
+        flex: 8,
+        child: Text(
+          value,
+          style: const TextStyle(color: Colors.black54),
+        ),
+      ),
+    ],
+  );
+}
